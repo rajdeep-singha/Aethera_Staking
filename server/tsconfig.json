@@ -1,5 +1,9 @@
 {
   "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "rootDir": "./src",
+    "outDir": "./dist",
     "baseUrl": "./src",
     "paths": {
       "*": ["*"]
@@ -8,10 +12,9 @@
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "strict": true,
-    "target": "ES2020",
-    "outDir": "dist",
-    "rootDir": "server"
-
-  }
+    "strict": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }
+
