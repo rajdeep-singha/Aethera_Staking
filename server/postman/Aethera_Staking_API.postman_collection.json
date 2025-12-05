@@ -1,0 +1,174 @@
+{
+  "info": {
+    "name": "Aethera Staking API",
+    "description": "Complete API collection for Aethera renewable energy staking platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "player_address",
+      "value": "0x123...",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Check if the API server is running"
+      }
+    },
+    {
+      "name": "2. Get Vault Info",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/vault/info",
+          "host": ["{{base_url}}"],
+          "path": ["api", "vault", "info"]
+        },
+        "description": "Get vault configuration and balance"
+      }
+    },
+    {
+      "name": "3. Get Player Info",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/player/{{player_address}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "player", "{{player_address}}"]
+        },
+        "description": "Get player staking information"
+      }
+    },
+    {
+      "name": "4. Get Staking Stats",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/stats",
+          "host": ["{{base_url}}"],
+          "path": ["api", "stats"]
+        },
+        "description": "Get overall staking statistics"
+      }
+    },
+    {
+      "name": "5. Get Account Balance",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/balance/{{player_address}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "balance", "{{player_address}}"]
+        },
+        "description": "Get APT balance of an account"
+      }
+    },
+    {
+      "name": "6. Simulate Staking",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": \"100000000\",\n  \"duration_seconds\": 2592000\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/stake/simulate",
+          "host": ["{{base_url}}"],
+          "path": ["api", "stake", "simulate"]
+        },
+        "description": "Simulate staking to estimate rewards"
+      }
+    },
+    {
+      "name": "7. Admin - Update APY",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"apy_rate\": 750\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/admin/config",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin", "config"]
+        },
+        "description": "Update APY rate (admin only)"
+      }
+    },
+    {
+      "name": "8. Admin - Deposit to Vault",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": \"1000000000\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/admin/deposit",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin", "deposit"]
+        },
+        "description": "Deposit APT to vault for rewards (admin only)"
+      }
+    },
+    {
+      "name": "9. Admin - Withdraw from Vault",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "{{base_url}}/api/admin/withdraw",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin", "withdraw"]
+        },
+        "description": "Withdraw all funds from vault (admin only)"
+      }
+    }
+  ]
+}
