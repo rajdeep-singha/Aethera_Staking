@@ -149,4 +149,9 @@ module aethera_staking::state {
 
         vault_data.staked_amount = 0;
     }
+    public entry fun config(authority: &signer, new_apy_rate: u64) 
+    acquires VaultAccount {
+    let vault_data = borrow_global_mut<VaultAccount>(signer::address_of(authority));
+    vault_data.apy_rate = new_apy_rate;
+}
 }
