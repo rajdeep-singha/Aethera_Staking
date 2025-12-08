@@ -6,12 +6,12 @@ A beautiful React frontend for the Aethera Staking platform on Aptos blockchain.
 
 ## Features
 
-- 🔗 **Petra Wallet Integration** - Connect your Aptos wallet seamlessly
-- 💎 **Stake APT Tokens** - Stake your tokens with customizable lock durations
-- 📊 **Real-time Stats** - View vault statistics and your staking position
-- 🎁 **Claim Rewards** - Easily claim your accumulated staking rewards
-- ⏱️ **Lock Timer** - Visual countdown for your staking lock period
-- 📱 **Responsive Design** - Beautiful UI that works on all devices
+-  **Petra Wallet Integration** - Connect your Aptos wallet seamlessly
+-  **Stake APT Tokens** - Stake your tokens with customizable lock durations
+-  **Real-time Stats** - View vault statistics and your staking position
+-  **Claim Rewards** - Easily claim your accumulated staking rewards
+-  **Lock Timer** - Visual countdown for your staking lock period
+-  **Responsive Design** - Beautiful UI that works on all devices
 
 ## Quick Start
 
@@ -45,11 +45,11 @@ VITE_API_URL=http://localhost:3000/api
 
 ## Tech Stack
 
-- ⚛️ **React 18** - UI Framework
-- 📘 **TypeScript** - Type Safety
-- ⚡ **Vite** - Build Tool
-- 🎨 **CSS3** - Modern Styling with CSS Variables
-- 🌐 **Axios** - HTTP Client
+-  **React 18** - UI Framework
+-  **TypeScript** - Type Safety
+-  **Vite** - Build Tool
+-  **CSS3** - Modern Styling with CSS Variables
+-  **Axios** - HTTP Client
 
 ## Project Structure
 
