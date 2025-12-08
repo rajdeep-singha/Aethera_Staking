@@ -1,0 +1,15 @@
+[package]
+name = "aethera_staking"
+version = "1.0.0"
+authors = []
+
+[addresses]
+aethera_staking = "_"
+
+[dev-addresses]
+aethera_staking = "0x3894481b4dab10b691e954de7836b39fab6ea587861a613792aabd2f21008747"
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-framework.git"
+rev = "mainnet"
+subdir = "aptos-framework"
+
