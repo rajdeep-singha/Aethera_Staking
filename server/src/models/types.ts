@@ -1,19 +1,23 @@
 export interface VaultInfo {
   authority: string;
-  staked_amount: string;
-  apy_rate: string;
+  total_staked: string;
+  total_staked_apt: string;
+  apy_rate: number;
   vault_balance: string;
+  vault_balance_apt: string;
 }
 
 export interface PlayerInfo {
-  staked_time: string;
+  address: string;
   staked_amount: string;
-  reward_time: string;
-  duration_time: string;
-  reward_amount: string;
-  pending_rewards?: string;
-  unlock_time?: string;
-  is_unlocked?: boolean;
+  staked_amount_apt: string;
+  stake_timestamp: number;
+  lock_duration: number;
+  unlock_timestamp: number;
+  is_locked: boolean;
+  time_remaining: number;
+  pending_rewards: string;
+  pending_rewards_apt: string;
 }
 
 export interface StakeRequest {

@@ -9,21 +9,42 @@ export class StakingService {
    */
   async getVaultInfo(vaultAuthority: string): Promise<VaultInfo | null> {
     try {
+      const resourceType = `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::state::VaultAccount` as `${string}::${string}::${string}`;
+      console.log('Fetching vault resource:', resourceType, 'from:', vaultAuthority);
+      
       const resource = await aptos.getAccountResource({
         accountAddress: vaultAuthority,
-        resourceType: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::state::VaultAccount`,
+        resourceType: resourceType,
       });
 
-      const data = resource.data as any;
+      console.log('Vault resource response:', JSON.stringify(resource, null, 2));
 
+      // Handle different response formats - SDK might return data directly or nested
+      const data = (resource as any).data || resource;
+      
+      if (!data || !data.authority) {
+        console.log('Vault data structure invalid:', data);
+        return null;
+      }
+
+      const totalStaked = data.staked_amount?.toString() || '0';
+      const vaultBalance = data.vault_coins?.value?.toString() || '0';
+      
       return {
         authority: data.authority,
-        staked_amount: data.staked_amount,
-        apy_rate: data.apy_rate,
-        vault_balance: data.vault_coins?.value || '0',
+        total_staked: totalStaked,
+        total_staked_apt: (Number(totalStaked) / 100_000_000).toFixed(8),
+        apy_rate: Number(data.apy_rate) || 10,
+        vault_balance: vaultBalance,
+        vault_balance_apt: (Number(vaultBalance) / 100_000_000).toFixed(8),
       };
-    } catch (error) {
-      console.error('Error fetching vault info:', error);
+    } catch (error: any) {
+      // Resource not found is expected for uninitialized vault
+      if (error.message?.includes('Resource not found') || error.status === 404) {
+        console.log('Vault not initialized yet');
+      } else {
+        console.error('Error fetching vault info:', error.message || error);
+      }
       return null;
     }
   }
@@ -33,34 +54,58 @@ export class StakingService {
    */
   async getPlayerInfo(playerAddress: string): Promise<PlayerInfo | null> {
     try {
+      const resourceType = `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::state::PlayerAccount` as `${string}::${string}::${string}`;
+      console.log('Fetching player resource:', resourceType, 'for:', playerAddress);
+      
       const resource = await aptos.getAccountResource({
         accountAddress: playerAddress,
-        resourceType: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::state::PlayerAccount`,
+        resourceType: resourceType,
       });
 
-      const data = resource.data as any;
+      console.log('Player resource response:', JSON.stringify(resource, null, 2));
+
+      // Handle different response formats
+      const data = (resource as any).data || resource;
+      
+      if (!data || data.staked_time === undefined) {
+        console.log('Player data structure invalid:', data);
+        return null;
+      }
+
       const currentTime = Math.floor(Date.now() / 1000);
-      const unlockTime = Number(data.staked_time) + Number(data.duration_time);
+      const stakeTimestamp = Number(data.staked_time);
+      const lockDuration = Number(data.duration_time);
+      const unlockTimestamp = stakeTimestamp + lockDuration;
+      const timeRemaining = Math.max(0, unlockTimestamp - currentTime);
+      const isLocked = currentTime < unlockTimestamp;
 
       // Calculate pending rewards (matching contract formula: staked_amount * apy_rate * elapsed_time / (365 * 24 * 60 * 60 * 100))
       const vaultInfo = await this.getVaultInfo(CONTRACT_CONFIG.VAULT_AUTHORITY);
       const timeSinceLastClaim = currentTime - Number(data.reward_time);
+      const stakedAmount = data.staked_amount?.toString() || '0';
       const pendingRewards = vaultInfo 
-        ? Math.floor(Number(data.staked_amount) * Number(vaultInfo.apy_rate) * timeSinceLastClaim / (31536000 * 100)).toString()
+        ? Math.floor(Number(stakedAmount) * Number(vaultInfo.apy_rate) * timeSinceLastClaim / (31536000 * 100)).toString()
         : '0';
 
       return {
-        staked_time: data.staked_time,
-        staked_amount: data.staked_amount,
-        reward_time: data.reward_time,
-        duration_time: data.duration_time,
-        reward_amount: data.reward_amount,
+        address: playerAddress,
+        staked_amount: stakedAmount,
+        staked_amount_apt: (Number(stakedAmount) / 100_000_000).toFixed(8),
+        stake_timestamp: stakeTimestamp,
+        lock_duration: lockDuration,
+        unlock_timestamp: unlockTimestamp,
+        is_locked: isLocked,
+        time_remaining: timeRemaining,
         pending_rewards: pendingRewards,
-        unlock_time: unlockTime.toString(),
-        is_unlocked: currentTime >= unlockTime,
+        pending_rewards_apt: (Number(pendingRewards) / 100_000_000).toFixed(8),
       };
-    } catch (error) {
-      console.error('Error fetching player info:', error);
+    } catch (error: any) {
+      // Resource not found is expected for users who haven't staked
+      if (error.message?.includes('Resource not found') || error.status === 404) {
+        console.log('Player has not staked yet:', playerAddress);
+      } else {
+        console.error('Error fetching player info:', error.message || error);
+      }
       return null;
     }
   }
@@ -78,9 +123,9 @@ export class StakingService {
       const totalStakers = 0; // Placeholder
 
       return {
-        total_staked: vaultInfo.staked_amount,
+        total_staked: vaultInfo.total_staked,
         total_stakers: totalStakers,
-        apy_rate: vaultInfo.apy_rate,
+        apy_rate: String(vaultInfo.apy_rate),
         vault_balance: vaultInfo.vault_balance,
       };
     } catch (error) {
@@ -318,18 +363,27 @@ export class StakingService {
    */
   async getAccountBalance(address: string): Promise<string> {
     try {
-      const resources = await aptos.getAccountResources({
+      // Use the dedicated method to get APT balance
+      const balance = await aptos.getAccountAPTAmount({
         accountAddress: address,
       });
-
-      const accountResource = resources.find(
-        (r) => r.type === '0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>'
-      );
-
-      return (accountResource?.data as any)?.coin?.value || '0';
+      console.log(`Balance for ${address}: ${balance}`);
+      return balance.toString();
     } catch (error) {
       console.error('Error fetching account balance:', error);
-      return '0';
+      // Fallback to resources method
+      try {
+        const resources = await aptos.getAccountResources({
+          accountAddress: address,
+        });
+        const accountResource = resources.find(
+          (r) => r.type === '0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>'
+        );
+        return (accountResource?.data as any)?.coin?.value || '0';
+      } catch (fallbackError) {
+        console.error('Fallback balance fetch also failed:', fallbackError);
+        return '0';
+      }
     }
   }
 }
