@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useWallet } from '@aptos-labs/wallet-adapter-react';
+import type { InputTransactionData } from '@aptos-labs/wallet-adapter-react';
 import VaultInfo from './components/VaultInfo';
 import PlayerInfo from './components/PlayerInfo';
 import StakeForm from './components/StakeForm';
@@ -10,59 +12,47 @@ import './App.css';
 const CONTRACT_ADDRESS = '0x3894481b4dab10b691e954de7836b39fab6ea587861a613792aabd2f21008747';
 
 function App() {
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const { 
+    connect, 
+    disconnect, 
+    account, 
+    connected, 
+    wallets,
+    signAndSubmitTransaction,
+    network,
+  } = useWallet();
+
   const [walletBalance, setWalletBalance] = useState<string>('0');
   const [apyRate, setApyRate] = useState<number>(10);
   const [pendingRewards, setPendingRewards] = useState<string>('0.00000000');
   const [connecting, setConnecting] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [walletNetwork, setWalletNetwork] = useState<string>('unknown');
 
-  // Check if Petra wallet is available
-  const isPetraAvailable = () => {
-    return typeof window !== 'undefined' && 'aptos' in window;
-  };
+  const walletAddress = account?.address?.toString() || null;
+  const walletNetwork = network?.name || 'unknown';
+
+  // Find Petra wallet from available wallets
+  const petraWallet = wallets?.find(w => w.name.toLowerCase().includes('petra'));
+  const hasWallets = wallets && wallets.length > 0;
+
+  // Debug: Log available wallets
+  useEffect(() => {
+    console.log('Available wallets:', wallets?.map(w => w.name));
+    console.log('Petra wallet found:', petraWallet?.name);
+  }, [wallets, petraWallet]);
 
   // Connect wallet
-  const connectWallet = async () => {
-    if (!isPetraAvailable()) {
+  const handleConnect = async () => {
+    if (!hasWallets) {
       window.open('https://petra.app/', '_blank');
       return;
     }
 
     setConnecting(true);
     try {
-      const petra = (window as any).aptos;
-      
-      // Check network - try to get network info
-      try {
-        const network = await petra.network();
-        console.log('Petra wallet network:', network);
-        setWalletNetwork(network || 'unknown');
-        if (network && network.toLowerCase() !== 'devnet') {
-          alert(`⚠️ Please switch your Petra wallet to Devnet!\n\nCurrent network: ${network}\nRequired: Devnet\n\nGo to Petra → Settings → Network → Devnet`);
-        }
-      } catch (e) {
-        console.log('Could not detect network');
-        setWalletNetwork('unknown');
-      }
-      
-      const response = await petra.connect();
-      console.log('Connected wallet address:', response.address);
-      setWalletAddress(response.address);
-      
-      // Fetch balance
-      const balanceRes = await getBalance(response.address);
-      console.log('Balance response:', balanceRes);
-      if (balanceRes.success && balanceRes.data) {
-        setWalletBalance(balanceRes.data.balance_apt);
-      }
-
-      // Fetch player info for pending rewards
-      const playerRes = await getPlayerInfo(response.address);
-      if (playerRes.success && playerRes.data) {
-        setPendingRewards(playerRes.data.pending_rewards_apt);
-      }
+      // Prefer Petra, otherwise use first available wallet
+      const walletToConnect = petraWallet || wallets[0];
+      await connect(walletToConnect.name);
     } catch (error) {
       console.error('Failed to connect wallet:', error);
     } finally {
@@ -71,18 +61,42 @@ function App() {
   };
 
   // Disconnect wallet
-  const disconnectWallet = async () => {
+  const handleDisconnect = async () => {
     try {
-      if (isPetraAvailable()) {
-        await (window as any).aptos.disconnect();
-      }
-      setWalletAddress(null);
+      await disconnect();
       setWalletBalance('0');
       setPendingRewards('0.00000000');
     } catch (error) {
       console.error('Failed to disconnect:', error);
     }
   };
+
+  // Fetch balance when connected
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (!walletAddress) return;
+      
+      try {
+        const balanceRes = await getBalance(walletAddress);
+        console.log('Balance response:', balanceRes);
+        if (balanceRes.success && balanceRes.data) {
+          setWalletBalance(balanceRes.data.balance_apt);
+        }
+
+        // Fetch player info for pending rewards
+        const playerRes = await getPlayerInfo(walletAddress);
+        if (playerRes.success && playerRes.data) {
+          setPendingRewards(playerRes.data.pending_rewards_apt);
+        }
+      } catch (error) {
+        console.error('Failed to fetch wallet data:', error);
+      }
+    };
+
+    if (connected && walletAddress) {
+      fetchBalance();
+    }
+  }, [connected, walletAddress, refreshKey]);
 
   // Fetch APY rate on mount
   useEffect(() => {
@@ -99,61 +113,23 @@ function App() {
     fetchApy();
   }, []);
 
-  // Auto-connect if already connected
-  useEffect(() => {
-    const autoConnect = async () => {
-      if (isPetraAvailable()) {
-        try {
-          const petra = (window as any).aptos;
-          const isConnected = await petra.isConnected();
-          if (isConnected) {
-            // Check network
-            try {
-              const network = await petra.network();
-              console.log('Petra wallet network:', network);
-              setWalletNetwork(network || 'unknown');
-              if (network && network.toLowerCase() !== 'devnet') {
-                console.warn(`⚠️ Petra is on ${network}, not devnet!`);
-              }
-            } catch (e) {
-              console.log('Could not detect network');
-              setWalletNetwork('unknown');
-            }
-            
-            const account = await petra.account();
-            console.log('Auto-connected wallet:', account.address);
-            setWalletAddress(account.address);
-            
-            const balanceRes = await getBalance(account.address);
-            console.log('Balance from API:', balanceRes);
-            if (balanceRes.success && balanceRes.data) {
-              setWalletBalance(balanceRes.data.balance_apt);
-            }
-          }
-        } catch (error) {
-          console.error('Auto-connect failed:', error);
-        }
-      }
-    };
-    autoConnect();
-  }, []);
-
   // Handle stake action
   const handleStake = async (amountOctas: string, durationSeconds: number) => {
-    if (!walletAddress || !isPetraAvailable()) return;
+    if (!walletAddress) return;
 
     try {
-      const petra = (window as any).aptos;
-      
-      const payload = {
-        type: 'entry_function_payload',
-        function: `${CONTRACT_ADDRESS}::state::sol_stake`,
-        type_arguments: [],
-        arguments: [CONTRACT_ADDRESS, amountOctas, durationSeconds.toString()],
+      const transaction: InputTransactionData = {
+        data: {
+          function: `${CONTRACT_ADDRESS}::state::sol_stake`,
+          functionArguments: [CONTRACT_ADDRESS, amountOctas, durationSeconds.toString()],
+        },
       };
 
-      const response = await petra.signAndSubmitTransaction(payload);
+      const response = await signAndSubmitTransaction(transaction);
       console.log('Stake transaction:', response);
+      
+      // Wait a bit for the transaction to be indexed
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Refresh data after staking
       setRefreshKey((prev) => prev + 1);
@@ -170,20 +146,21 @@ function App() {
 
   // Handle claim rewards
   const handleClaimRewards = async () => {
-    if (!walletAddress || !isPetraAvailable()) return;
+    if (!walletAddress) return;
 
     try {
-      const petra = (window as any).aptos;
-      
-      const payload = {
-        type: 'entry_function_payload',
-        function: `${CONTRACT_ADDRESS}::state::claim_rewards`,
-        type_arguments: [],
-        arguments: [CONTRACT_ADDRESS],
+      const transaction: InputTransactionData = {
+        data: {
+          function: `${CONTRACT_ADDRESS}::state::claim_rewards`,
+          functionArguments: [CONTRACT_ADDRESS],
+        },
       };
 
-      const response = await petra.signAndSubmitTransaction(payload);
+      const response = await signAndSubmitTransaction(transaction);
       console.log('Claim transaction:', response);
+      
+      // Wait a bit for the transaction to be indexed
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Refresh data
       setRefreshKey((prev) => prev + 1);
@@ -231,7 +208,7 @@ function App() {
         </nav>
 
         <div className="wallet-section">
-          {walletAddress ? (
+          {connected && walletAddress ? (
             <div className="wallet-connected">
               <span className={`network-badge ${walletNetwork.toLowerCase() === 'devnet' ? 'devnet' : 'wrong-network'}`}>
                 {walletNetwork}
@@ -242,14 +219,14 @@ function App() {
                   {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
                 </span>
               </div>
-              <button className="disconnect-btn" onClick={disconnectWallet}>
+              <button className="disconnect-btn" onClick={handleDisconnect}>
                 Disconnect
               </button>
             </div>
           ) : (
             <button 
               className="connect-btn" 
-              onClick={connectWallet}
+              onClick={handleConnect}
               disabled={connecting}
             >
               {connecting ? (
@@ -257,8 +234,8 @@ function App() {
                   <span className="btn-spinner"></span>
                   Connecting...
                 </>
-              ) : isPetraAvailable() ? (
-                <>🔗 Connect Petra</>
+              ) : hasWallets ? (
+                <>🔗 Connect {petraWallet ? 'Petra' : 'Wallet'}</>
               ) : (
                 <>📥 Install Petra</>
               )}
