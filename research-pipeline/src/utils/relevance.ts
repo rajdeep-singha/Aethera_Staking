@@ -18,7 +18,13 @@ const KEYWORD_WEIGHTS: Record<string, number> = {
   blockchain: 6,
   staking: 8,
   "energy trading": 9,
-  aptos: 12,
+  aptos: 15,
+  "aptos tokenization": 20,
+  "aptos rwa": 18,
+  "aptos defi": 14,
+  "aptos nft": 12,
+  "move language": 10,
+  aptoslabs: 12,
 
   // Medium relevance
   "smart contract": 5,
@@ -95,6 +101,7 @@ export function categorizeArticle(
     regulation: 0,
     investment: 0,
     blockchain: 0,
+    aptos: 0,
     general: 1,
   };
 
@@ -106,6 +113,7 @@ export function categorizeArticle(
   if (/regulat|compliance|sec\b|mica\b|legal.framework/i.test(text)) categoryScores.regulation += 10;
   if (/invest|fund|capital|stake|yield|return/i.test(text)) categoryScores.investment += 8;
   if (/blockchain|smart.contract|web3|crypto|token(?!iz)/i.test(text)) categoryScores.blockchain += 5;
+  if (/aptos|aptoslabs|move.language/i.test(text)) categoryScores.aptos += 15;
 
   let best: Category = "general";
   let bestScore = 0;

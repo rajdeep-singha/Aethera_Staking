@@ -38,6 +38,27 @@ const WEB_SOURCES: { url: string; name: string; type: "listing" | "search" }[] =
     name: "Energy Storage News",
     type: "search",
   },
+  // Aptos-specific sources
+  {
+    url: "https://www.coindesk.com/tag/aptos/",
+    name: "CoinDesk Aptos",
+    type: "listing",
+  },
+  {
+    url: "https://cointelegraph.com/tags/aptos",
+    name: "CoinTelegraph Aptos",
+    type: "listing",
+  },
+  {
+    url: "https://www.theblock.co/tag/aptos",
+    name: "The Block Aptos",
+    type: "listing",
+  },
+  {
+    url: "https://messari.io/asset/aptos/profile",
+    name: "Messari Aptos",
+    type: "listing",
+  },
 ];
 
 const HEADERS = {
@@ -80,6 +101,23 @@ export class WebScraper extends BaseScraper {
       articles.push(...googleArticles);
     } catch (err) {
       errors.push(`Web: Google News scrape failed: ${(err as Error).message}`);
+    }
+
+    // If query is Aptos-related, run extra targeted Google News searches
+    if (/aptos/i.test(query)) {
+      const aptosQueries = [
+        "aptos tokenization RWA",
+        "aptos blockchain DeFi 2025 2026",
+        "aptos move language token",
+      ];
+      for (const aq of aptosQueries) {
+        try {
+          const extra = await this.scrapeGoogleNews(aq);
+          articles.push(...extra);
+        } catch (err) {
+          errors.push(`Web: Aptos Google News (${aq}) failed: ${(err as Error).message}`);
+        }
+      }
     }
 
     logger.info(`Web: Collected ${articles.length} articles`);

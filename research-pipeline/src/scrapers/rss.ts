@@ -27,6 +27,10 @@ const RSS_FEEDS: { url: string; name: string }[] = [
 
   // General finance / regulation
   { url: "https://www.ledgerinsights.com/feed/", name: "Ledger Insights" },
+
+  // Aptos ecosystem
+  { url: "https://medium.com/feed/tag/aptos", name: "Medium Aptos" },
+  { url: "https://medium.com/feed/aptoslabs", name: "Aptos Labs Blog" },
 ];
 
 export class RssScraper extends BaseScraper {
@@ -53,12 +57,11 @@ export class RssScraper extends BaseScraper {
           const content = item.contentSnippet || item.content || "";
           const combined = `${title} ${content}`.toLowerCase();
 
-          // Filter: must match query or contain tokenization-related terms
+          // Filter: must match query or contain tokenization/Aptos-related terms
           const isRelevant =
             combined.includes(queryLower) ||
-            /tokeniz|rwa|real.world.asset|solar.*blockchain|energy.*token|depin|carbon.*token/i.test(
-              combined
-            );
+            /tokeniz|rwa|real.world.asset|solar.*blockchain|energy.*token|depin|carbon.*token/i.test(combined) ||
+            /aptos|move.language|aptoslabs|aptos.*defi|aptos.*nft/i.test(combined);
 
           if (!isRelevant) continue;
 

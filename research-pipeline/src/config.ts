@@ -27,6 +27,10 @@ export const TOPICS = {
   DEPIN: "decentralized physical infrastructure DePIN",
   TOKENIZED_ENERGY: "tokenized energy trading",
   APTOS_RWA: "aptos real world assets",
+  APTOS_TOKENIZATION: "aptos tokenization",
+  APTOS_DEFI: "aptos defi ecosystem",
+  APTOS_MOVE: "aptos move language smart contract",
+  APTOS_NFT: "aptos NFT digital asset",
   REGULATION: "tokenization regulation compliance",
 } as const;
 
@@ -39,6 +43,7 @@ export const CATEGORIES = [
   "regulation",
   "investment",
   "blockchain",
+  "aptos",
   "general",
 ] as const;
 
