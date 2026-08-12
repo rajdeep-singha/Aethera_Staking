@@ -115,9 +115,9 @@ module aethera_staking::project_token {
         total_claimed:                u64,    // audit trail
     }
 
-    // ==================================================================
+   
     // Admin functions
-    // ==================================================================
+   
 
     /// Called ONCE, globally. Creates the hub at the admin's address.
     /// project_authority = the ProjectRegistry address (so we can read token params).
@@ -323,9 +323,7 @@ module aethera_staking::project_token {
         let _ = reason_code; // emit event with reason in production
     }
 
-    // ==================================================================
     // Investor functions
-    // ==================================================================
 
     /// Mint project tokens for an investor who just staked. Called CROSS-MODULE by
     /// state::sol_stake (hence `public fun`, not `entry`). Returns the number of
@@ -487,9 +485,9 @@ module aethera_staking::project_token {
         helpers::transfer_coins_to_player(investor, coins);
     }
 
-    // ==================================================================
+   
     // View functions
-    // ==================================================================
+   
 
     #[view]
     public fun get_token_balance(
@@ -559,5 +557,15 @@ module aethera_staking::project_token {
         let hub = borrow_global<ProjectTokenHub>(hub_authority);
         assert!(table::contains(&hub.states, project_id), E_PROJECT_TOKEN_NOT_FOUND);
         table::borrow(&hub.states, project_id).total_supply
+    }
+
+        #[view]
+    public fun get_token_metadata_addr(
+        hub_authority: address,
+        project_id:    u64,
+    ): address acquires ProjectTokenHub {
+        let hub = borrow_global<ProjectTokenHub>(hub_authority);
+        assert!(table::contains(&hub.states, project_id), E_PROJECT_TOKEN_NOT_FOUND);
+        table::borrow(&hub.states, project_id).token_metadata_addr
     }
 }
