@@ -61,7 +61,7 @@ module aethera_staking::marketplace {
 
     /// Lives at EACH PROJECT'S escrow resource account (mirrors how
     /// project_token.move isolates capabilities per project)
-    struct Orders has Key {
+    struct Orders has key {
         orders:         Table<u64, Order>,
         next_order_id:  u64,
     }
