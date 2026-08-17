@@ -88,7 +88,28 @@ export const PROJECT_FUNCTIONS = {
   REJECT_PROJECT: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_listing::reject_project`,
 };
 
-// ── View Functions ────────────────────────────────────────────────────────────
+
+export const TOKEN_FUNCTIONS = {
+  INITIALIZE: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_token::initialize`,
+  INITIALIZE_PROJECT_TOKEN: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_token::initialize_project_token`,
+  SET_LIFECYCLE: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_token::set_lifecycle`,
+  UPDATE_NAV: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_token::update_nav`,
+  DISTRIBUTE_YIELD: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_token::distribute_yield`,
+  ADMIN_FORCE_BURN: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_token::admin_force_burn`,
+  CLAIM_YIELD: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_token::claim_yield`,
+};
+
+export const MARKETPLACE_FUNCTIONS = {
+  INITIALIZE: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::marketplace::initialize`,
+  INIT_PROJECT_MARKET: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::marketplace::init_project_market`,
+  UPDATE_FEE: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::marketplace::update_fee`,
+  PLACE_ORDER: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::marketplace::place_order`,
+  CANCEL_ORDER: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::marketplace::cancel_order`,
+  FILL_ORDER: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::marketplace::fill_order`,
+};
+
+
+// ── View Functions 
 export const VIEW_FUNCTIONS = {
   // state.move
   GET_PROJECT_TOTAL_STAKED: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::state::get_project_total_staked`,
@@ -104,16 +125,23 @@ export const VIEW_FUNCTIONS = {
   GET_PROJECT_COST: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_listing::get_project_cost`,
   GET_PROJECT_LOCATION: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_listing::get_project_location`,
   GET_EXPECTED_YIELD: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_listing::get_expected_yield`,
+  GET_TOKEN_BALANCE:       `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_token::get_token_balance`,
+  GET_NAV:                 `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_token::get_nav`,
+  GET_LIFECYCLE:            `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_token::get_lifecycle`,
+  GET_PENDING_YIELD:        `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_token::get_pending_yield`,
+  GET_TOKEN_METADATA_ADDR:  `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_token::get_token_metadata_addr`, // the new view
+  GET_MARKET_ORDER:         `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::marketplace::get_order`,
+  GET_MARKET_ESCROW_ADDR:   `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::marketplace::get_escrow_address`,
 };
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// Constants 
 export const CONSTANTS = {
   OCTAS_PER_APT: 100_000_000,
   SECONDS_PER_YEAR: 31_536_000,
   BASIS_POINTS_DIVISOR: 10_000,
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+//  Helpers 
 export const aptToOctas = (apt: number): bigint =>
   BigInt(Math.floor(apt * CONSTANTS.OCTAS_PER_APT));
 

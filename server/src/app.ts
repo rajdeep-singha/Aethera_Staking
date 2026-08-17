@@ -20,7 +20,6 @@ dotenv.config();
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
 
-// ============ Middleware ============
 
 // Security
 app.use(helmet());
@@ -92,7 +91,6 @@ const publicLimiter = rateLimit({
 
 app.use("/api/admin", adminLimiter);
 app.use("/api", publicLimiter);
-// ============ Routes ============
 
 // Health check
 app.get("/health", (req: Request, res: Response) => {
@@ -150,10 +148,8 @@ app.get("/debug", (req: Request, res: Response) => {
   });
 });
 
-// Public endpoints
-// ============ Routes ============
 
-// ── Installer Registry (installer_registry.move) ─────────────────────────────
+//  Installer Registry (installer_registry.move) 
 // POST  /api/installer/register        → register wallet + basic info
 // POST  /api/installer/submit-kyc      → upload IPFS doc hash + pick location
 // POST  /api/installer/mark-registered → mark wallet as registered (from on-chain error)
@@ -167,32 +163,36 @@ app.get("/api/installer/:address/on-chain-status", async (req, res) => {
   try {
     const { address } = req.params;
     console.log(`[on-chain-status] Checking for address: ${address}`);
-    
+
     // Try to fetch installer info from on-chain
-    const installerService = new (await import('./controllers/installer.controllers')).InstallerService();
+    const installerService = new (
+      await import("./controllers/installer.controllers")
+    ).InstallerService();
     const onChainInfo = await installerService.getInstallerInfo(address);
-    
+
     if (onChainInfo) {
       console.log(`[on-chain-status] ✅ On-chain data found`);
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         on_chain_available: true,
         kyc_status: onChainInfo.kyc_status,
       });
     } else {
-      console.log(`[on-chain-status] ❌ No on-chain data (contracts may not be deployed)`);
-      res.json({ 
-        success: true, 
+      console.log(
+        `[on-chain-status] ❌ No on-chain data (contracts may not be deployed)`,
+      );
+      res.json({
+        success: true,
         on_chain_available: false,
-        reason: 'No on-chain data found - contracts may not be deployed',
+        reason: "No on-chain data found - contracts may not be deployed",
       });
     }
   } catch (error: any) {
     console.log(`[on-chain-status] ❌ Error checking on-chain:`, error.message);
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       on_chain_available: false,
-      reason: error.message || 'Failed to check on-chain status',
+      reason: error.message || "Failed to check on-chain status",
     });
   }
 });
@@ -323,7 +323,6 @@ app.get(
   stakingController.getBalance.bind(stakingController),
 );
 
-// ============ Error Handling ============
 
 app.use((req: Request, res: Response) => {
   res.status(404).json({ success: false, error: "Route not found" });
@@ -348,18 +347,20 @@ app.listen(PORT, async () => {
   ║  NETWORK:  ${process.env.APTOS_NETWORK || "devnet"}
   ╚═══════════════════════════════════════╝
   `);
-  
+
   // Initialize registries on startup
-  console.log('\\n[Startup] Initializing smart contract registries...');
-  const { installerService } = await import('./services/installer.services');
-  const { projectService } = await import('./services/project.services');
-  
+  console.log("\\n[Startup] Initializing smart contract registries...");
+  const { installerService } = await import("./services/installer.services");
+  const { projectService } = await import("./services/project.services");
+
   const installerOk = await installerService.initializeRegistry();
   const projectOk = await projectService.initializeRegistry();
-  
+
   if (installerOk && projectOk) {
-    console.log('[Startup] ✅ All registries initialized');
+    console.log("[Startup] ✅ All registries initialized");
   } else {
-    console.warn('[Startup] ⚠️ Some registries could not be initialized (may already exist)');
+    console.warn(
+      "[Startup] ⚠️ Some registries could not be initialized (may already exist)",
+    );
   }
 });
