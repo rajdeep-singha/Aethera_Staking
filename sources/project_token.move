@@ -246,6 +246,25 @@ module aethera_staking::project_token {
         let _ = source_hash; // retained for auditability; emit event in production
     }
 
+    /// Adjust how long a NAV is trusted before staking is blocked with E_NAV_STALE.
+    /// NAV here is a slow-moving, operator-attested valuation (revalued per the PPA
+    /// schedule, not tick-by-tick), so this window is measured in days, e.g. 90 days
+    /// = 7_776_000 seconds. Lets an already-initialized project be retuned without a
+    /// re-init. Allowed at any lifecycle.
+    public entry fun set_max_staleness_seconds(
+        admin:         &signer,
+        hub_authority: address,
+        project_id:    u64,
+        new_max_staleness_seconds: u64,
+    ) acquires ProjectTokenHub {
+        let hub = borrow_global_mut<ProjectTokenHub>(hub_authority);
+        assert!(signer::address_of(admin) == hub.admin, E_NOT_ADMIN);
+        assert!(table::contains(&hub.states, project_id), E_PROJECT_TOKEN_NOT_FOUND);
+
+        let state = table::borrow_mut(&mut hub.states, project_id);
+        state.max_staleness_seconds = new_max_staleness_seconds;
+    }
+
     /// Distribute revenue as yield. APT comes from the admin and lands in the
     /// project's isolated yield vault in the SAME transaction the accounting moves.
     public entry fun distribute_yield(
