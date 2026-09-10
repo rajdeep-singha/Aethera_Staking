@@ -4,7 +4,10 @@ if (!import.meta.env.VITE_API_URL && import.meta.env.PROD) {
   throw new Error("[api.ts] VITE_API_URL is not set.");
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL ;
+// VITE_API_URL may hold a comma-separated list (e.g. "local,prod"); use the first.
+const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:3000/api")
+  .split(",")[0]
+  .trim();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -111,6 +114,73 @@ export interface ProjectPlayerStake {
   pending_rewards_apt: string;
 }
 
+// ── Project Token + Marketplace types (project_token.move / marketplace.move) ──
+export const Lifecycle = {
+  PRE_LAUNCH: 0,
+  FUNDING: 1,
+  ACTIVE: 2,
+  MATURED: 3,
+  CLOSED: 4,
+} as const;
+export const LIFECYCLE_LABELS: Record<number, string> = {
+  0: "PreLaunch",
+  1: "Funding",
+  2: "Active",
+  3: "Matured",
+  4: "Closed",
+};
+
+export const OrderSide = { BID: 0, ASK: 1 } as const;
+export const OrderStatus = { OPEN: 0, FILLED: 1, CANCELLED: 2 } as const;
+export const ORDER_STATUS_LABELS: Record<number, string> = {
+  0: "Open",
+  1: "Filled",
+  2: "Cancelled",
+};
+
+export interface TokenBalanceInfo {
+  address: string;
+  project_id: number;
+  balance: string; // whole tokens (FA decimals = 0)
+}
+
+export interface TokenNavInfo {
+  project_id: number;
+  nav_per_token: string;
+  nav_per_token_apt: string;
+}
+
+export interface TokenLifecycleInfo {
+  project_id: number;
+  lifecycle: number;
+  lifecycle_label: string;
+}
+
+export interface PendingYieldInfo {
+  address: string;
+  project_id: number;
+  pending_yield: string;
+  pending_yield_apt: string;
+}
+
+export interface MarketOrder {
+  order_id: number;
+  project_id: number;
+  maker: string;
+  side: number; // 0 = BID, 1 = ASK
+  price_per_token: string;
+  quantity: string;
+  status: number; // 0 OPEN, 1 FILLED, 2 CANCELLED
+  created_at: number;
+}
+
+export interface OrderBookResponse {
+  project_id: number;
+  bids: MarketOrder[];
+  asks: MarketOrder[];
+  updated_at: number;
+}
+
 // ── Existing API calls (unchanged) ───────────────────────────────────────────
 export const getVaultInfo = async (): Promise<ApiResponse<VaultInfo>> => {
   const r = await api.get(`/vault/info?_t=${Date.now()}`);
@@ -197,6 +267,80 @@ export const adminDepositRewards = async (projectId: number, amount: string): Pr
 
 export const adminUpdateConfig = async (projectId: number, newApyRate: number): Promise<ApiResponse<any>> => {
   const r = await api.post("/admin/vault/config", { project_id: projectId, new_apy_rate: newApyRate });
+  return r.data;
+};
+
+// ── Project Token API (reads) ─────────────────────────────────────────────────
+export const getTokenBalance = async (address: string, projectId: number): Promise<ApiResponse<TokenBalanceInfo>> => {
+  const r = await api.get(`/token/balance/${address}/project/${projectId}?_t=${Date.now()}`);
+  return r.data;
+};
+
+export const getTokenNav = async (projectId: number): Promise<ApiResponse<TokenNavInfo>> => {
+  const r = await api.get(`/token/nav/${projectId}?_t=${Date.now()}`);
+  return r.data;
+};
+
+export const getTokenLifecycle = async (projectId: number): Promise<ApiResponse<TokenLifecycleInfo>> => {
+  const r = await api.get(`/token/lifecycle/${projectId}?_t=${Date.now()}`);
+  return r.data;
+};
+
+export const getPendingYield = async (address: string, projectId: number): Promise<ApiResponse<PendingYieldInfo>> => {
+  const r = await api.get(`/token/pending-yield/${address}/project/${projectId}?_t=${Date.now()}`);
+  return r.data;
+};
+
+// ── Marketplace API (reads) ───────────────────────────────────────────────────
+export const getOrder = async (projectId: number, orderId: number): Promise<ApiResponse<MarketOrder>> => {
+  const r = await api.get(`/marketplace/order/${projectId}/${orderId}?_t=${Date.now()}`);
+  return r.data;
+};
+
+export const getOrderBook = async (projectId: number): Promise<ApiResponse<OrderBookResponse>> => {
+  const r = await api.get(`/marketplace/orderbook/${projectId}?_t=${Date.now()}`);
+  return r.data;
+};
+
+// ── Admin Token API (server-signed) ───────────────────────────────────────────
+export const adminInitProjectToken = async (
+  projectId: number,
+  maxSupply: string,
+  navPerToken: string,
+  maxStalenessSeconds: number,
+): Promise<ApiResponse<any>> => {
+  const r = await api.post("/admin/token/init-project", {
+    project_id: projectId,
+    max_supply: maxSupply,
+    nav_per_token: navPerToken,
+    max_staleness_seconds: maxStalenessSeconds,
+  });
+  return r.data;
+};
+
+export const adminUpdateNav = async (projectId: number, newNav: string, sourceHash?: string): Promise<ApiResponse<any>> => {
+  const r = await api.post("/admin/token/update-nav", { project_id: projectId, new_nav: newNav, source_hash: sourceHash });
+  return r.data;
+};
+
+export const adminSetLifecycle = async (projectId: number, newLifecycle: number): Promise<ApiResponse<any>> => {
+  const r = await api.post("/admin/token/set-lifecycle", { project_id: projectId, new_lifecycle: newLifecycle });
+  return r.data;
+};
+
+export const adminDistributeYield = async (projectId: number, yieldAmount: string): Promise<ApiResponse<any>> => {
+  const r = await api.post("/admin/token/distribute-yield", { project_id: projectId, yield_amount: yieldAmount });
+  return r.data;
+};
+
+// ── Admin Marketplace API (server-signed) ─────────────────────────────────────
+export const adminInitMarket = async (projectId: number): Promise<ApiResponse<any>> => {
+  const r = await api.post("/admin/marketplace/init-project", { project_id: projectId });
+  return r.data;
+};
+
+export const adminUpdateFee = async (newFeeBps: number): Promise<ApiResponse<any>> => {
+  const r = await api.post("/admin/marketplace/fee", { new_fee_bps: newFeeBps });
   return r.data;
 };
 
