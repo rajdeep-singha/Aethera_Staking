@@ -13,6 +13,8 @@ import {
 } from "./controllers/installer.controllers";
 import { projectController } from "./controllers/project.contollers";
 import { adminController } from "./controllers/admin.controllers";
+import { projectTokenController } from "./controllers/project-token.controllers";
+import { marketplaceController } from "./controllers/marketplace.controllers";
 
 // Load environment variables
 dotenv.config();
@@ -308,6 +310,104 @@ app.post(
   adminController.updateConfig.bind(adminController),
 );
 
+// ── Project Token (project_token.move) ────────────────────────────────────────
+// GET   /api/token/balance/:address/project/:project_id  → investor token balance
+// GET   /api/token/nav/:project_id                       → current NAV (octas/token)
+// GET   /api/token/lifecycle/:project_id                 → lifecycle stage
+// GET   /api/token/pending-yield/:address/project/:id    → unclaimed APT yield
+// POST  /api/token/claim-yield                           → investor claims yield
+app.get(
+  "/api/token/balance/:address/project/:project_id",
+  projectTokenController.getBalance.bind(projectTokenController),
+);
+app.get(
+  "/api/token/nav/:project_id",
+  projectTokenController.getNav.bind(projectTokenController),
+);
+app.get(
+  "/api/token/lifecycle/:project_id",
+  projectTokenController.getLifecycle.bind(projectTokenController),
+);
+app.get(
+  "/api/token/pending-yield/:address/project/:project_id",
+  projectTokenController.getPendingYield.bind(projectTokenController),
+);
+app.post(
+  "/api/token/claim-yield",
+  projectTokenController.claimYield.bind(projectTokenController),
+);
+
+// Admin — project token lifecycle / NAV / yield / compliance
+// POST  /api/admin/token/init-project     → create a project's fungible asset
+// POST  /api/admin/token/update-nav       → set NAV (octas per token)
+// POST  /api/admin/token/set-staleness    → retune NAV staleness window (seconds)
+// POST  /api/admin/token/set-lifecycle    → advance lifecycle stage
+// POST  /api/admin/token/distribute-yield → distribute revenue as yield
+// POST  /api/admin/token/force-burn       → compliance burn from a holder
+app.post(
+  "/api/admin/token/init-project",
+  projectTokenController.initProjectToken.bind(projectTokenController),
+);
+app.post(
+  "/api/admin/token/update-nav",
+  projectTokenController.updateNav.bind(projectTokenController),
+);
+app.post(
+  "/api/admin/token/set-staleness",
+  projectTokenController.setMaxStaleness.bind(projectTokenController),
+);
+app.post(
+  "/api/admin/token/set-lifecycle",
+  projectTokenController.setLifecycle.bind(projectTokenController),
+);
+app.post(
+  "/api/admin/token/distribute-yield",
+  projectTokenController.distributeYield.bind(projectTokenController),
+);
+app.post(
+  "/api/admin/token/force-burn",
+  projectTokenController.forceBurn.bind(projectTokenController),
+);
+
+// ── Marketplace (marketplace.move) ────────────────────────────────────────────
+// POST  /api/marketplace/order                        → place_order
+// POST  /api/marketplace/order/cancel                 → cancel_order
+// POST  /api/marketplace/order/fill                   → fill_order
+// GET   /api/marketplace/order/:project_id/:order_id  → live on-chain order status
+// GET   /api/marketplace/orderbook/:project_id         → open bids/asks from the event index (NOT chain)
+app.post(
+  "/api/marketplace/order/cancel",
+  marketplaceController.cancelOrder.bind(marketplaceController),
+);
+app.post(
+  "/api/marketplace/order/fill",
+  marketplaceController.fillOrder.bind(marketplaceController),
+);
+app.post(
+  "/api/marketplace/order",
+  marketplaceController.placeOrder.bind(marketplaceController),
+);
+app.get(
+  "/api/marketplace/order/:project_id/:order_id",
+  marketplaceController.getOrder.bind(marketplaceController),
+);
+app.get(
+  "/api/marketplace/orderbook/:project_id",
+  marketplaceController.getOrderBook.bind(marketplaceController),
+);
+
+// Admin — marketplace setup
+// POST  /api/admin/marketplace/init-project → init_project_market
+// POST  /api/admin/marketplace/fee          → update_fee
+app.post(
+  "/api/admin/marketplace/init-project",
+  marketplaceController.initProjectMarket.bind(marketplaceController),
+);
+app.post(
+  "/api/admin/marketplace/fee",
+  marketplaceController.updateFee.bind(marketplaceController),
+);
+
 // ── Legacy routes (your original endpoints — kept for backward compat) ────────
 app.get(
   "/api/vault/info",
@@ -353,14 +453,31 @@ app.listen(PORT, async () => {
   const { installerService } = await import("./services/installer.services");
   const { projectService } = await import("./services/project.services");
 
+  const { projectTokenService } = await import(
+    "./services/project-token.services"
+  );
+  const { marketplaceService } = await import(
+    "./services/marketplace.services"
+  );
+
   const installerOk = await installerService.initializeRegistry();
   const projectOk = await projectService.initializeRegistry();
 
-  if (installerOk && projectOk) {
-    console.log("[Startup] ✅ All registries initialized");
+  // Token hub MUST init before the marketplace hub — marketplace::initialize
+  // stores token_hub_authority pointing at ProjectTokenHub, and place/fill
+  // orders call project_token::get_lifecycle.
+  const tokenHubOk = await projectTokenService.initializeHub();
+  const marketHubOk = await marketplaceService.initializeHub();
+
+  if (installerOk && projectOk && tokenHubOk && marketHubOk) {
+    console.log("[Startup] ✅ All registries + hubs initialized");
   } else {
     console.warn(
-      "[Startup] ⚠️ Some registries could not be initialized (may already exist)",
+      "[Startup] ⚠️ Some registries/hubs could not be initialized (may already exist)",
     );
   }
+
+  // Start the off-chain order-book indexer (polls marketplace events).
+  const { orderBookTracker } = await import("./services/orderbook-tracker");
+  orderBookTracker.start();
 });

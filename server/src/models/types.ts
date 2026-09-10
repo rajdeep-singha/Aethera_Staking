@@ -76,7 +76,6 @@ export interface NetworkConfig {
   faucetUrl?: string;
 }
 
-// KYC STATUS ENUM  (mirrors on-chain constants)
 
 export enum KycStatus {
   PENDING   = 0,   // registered, docs not uploaded yet
@@ -256,6 +255,146 @@ export interface AdminConfigRequest {
 // POST /api/admin/vault/withdraw
 export interface AdminWithdrawRequest {
   project_id: number;
+}
+
+// PROJECT TOKEN — project_token.move
+
+// Lifecycle stages (mirrors on-chain constants in project_token.move)
+export enum Lifecycle {
+  PRE_LAUNCH = 0,
+  FUNDING    = 1,
+  ACTIVE     = 2,
+  MATURED    = 3,
+  CLOSED     = 4,
+}
+
+// GET /api/token/balance/:address/project/:project_id
+export interface TokenBalanceInfo {
+  address: string;
+  project_id: number;
+  balance: string;            // whole tokens (FA decimals = 0)
+}
+
+// GET /api/token/nav/:project_id
+export interface TokenNavInfo {
+  project_id: number;
+  nav_per_token: string;      // octas per token
+  nav_per_token_apt: string;  // formatted APT
+}
+
+// GET /api/token/lifecycle/:project_id
+export interface TokenLifecycleInfo {
+  project_id: number;
+  lifecycle: Lifecycle;
+  lifecycle_label: string;    // "PreLaunch" | "Funding" | "Active" | "Matured" | "Closed"
+}
+
+// GET /api/token/pending-yield/:address/project/:project_id
+export interface PendingYieldInfo {
+  address: string;
+  project_id: number;
+  pending_yield: string;      // octas
+  pending_yield_apt: string;  // formatted APT
+}
+
+// POST /api/token/claim-yield
+export interface ClaimYieldRequest {
+  private_key: string;
+  project_id: number;
+}
+
+// POST /api/admin/token/init-project
+export interface AdminInitProjectTokenRequest {
+  project_id: number;
+  max_supply: string;            // 0 = uncapped
+  nav_per_token: string;         // octas per token
+  max_staleness_seconds: number;
+}
+
+// POST /api/admin/token/update-nav
+export interface AdminUpdateNavRequest {
+  project_id: number;
+  new_nav: string;               // octas per token
+  source_hash?: string;          // optional off-chain audit reference
+}
+
+// POST /api/admin/token/set-lifecycle
+export interface AdminSetLifecycleRequest {
+  project_id: number;
+  new_lifecycle: Lifecycle;      // must be strictly greater than current stage
+}
+
+// POST /api/admin/token/distribute-yield
+export interface AdminDistributeYieldRequest {
+  project_id: number;
+  yield_amount: string;          // octas
+}
+
+// POST /api/admin/token/force-burn
+export interface AdminForceBurnRequest {
+  project_id: number;
+  holder: string;
+  amount: string;                // whole tokens
+  reason_code: number;           // 0 = AML, 1 = court_order, 2 = compliance
+}
+
+// MARKETPLACE — marketplace.move
+
+export enum OrderSide { BID = 0, ASK = 1 }
+export enum OrderStatus { OPEN = 0, FILLED = 1, CANCELLED = 2 }
+
+// POST /api/marketplace/order
+export interface PlaceOrderRequest {
+  private_key: string;
+  project_id: number;
+  side: OrderSide;
+  price_per_token: string;       // octas per token
+  quantity: string;              // whole tokens
+}
+
+// POST /api/marketplace/order/cancel
+export interface CancelOrderRequest {
+  private_key: string;
+  project_id: number;
+  order_id: number;
+}
+
+// POST /api/marketplace/order/fill
+export interface FillOrderRequest {
+  private_key: string;
+  project_id: number;
+  order_id: number;
+  fill_quantity: string;         // whole tokens
+}
+
+// GET /api/marketplace/order/:project_id/:order_id
+export interface MarketOrder {
+  order_id: number;
+  project_id: number;
+  maker: string;
+  side: OrderSide;
+  price_per_token: string;       // octas per token
+  quantity: string;              // remaining unfilled quantity, in tokens
+  status: OrderStatus;
+  created_at: number;
+}
+
+// GET /api/marketplace/orderbook/:project_id (served from the off-chain event index)
+export interface OrderBookResponse {
+  project_id: number;
+  bids: MarketOrder[];   // side = BID, sorted price_per_token descending (best bid first)
+  asks: MarketOrder[];   // side = ASK, sorted price_per_token ascending (best ask first)
+  updated_at: number;    // ms epoch of the last index reconciliation
+}
+
+// POST /api/admin/marketplace/init-project
+export interface AdminInitMarketRequest {
+  project_id: number;
+}
+
+// POST /api/admin/marketplace/fee
+export interface AdminUpdateFeeRequest {
+  new_fee_bps: number;           // capped at 1000 (10%) on-chain
 }
 
 // SHARED API RESPONSE WRAPPER

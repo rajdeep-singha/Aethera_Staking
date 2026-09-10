@@ -53,6 +53,14 @@ export const CONTRACT_CONFIG = {
   // kept for legacy routes
   VAULT_AUTHORITY:
     process.env.VAULT_AUTHORITY_ADDRESS || process.env.CONTRACT_ADDRESS!,
+
+  // ── Marketplace protocol fee config (marketplace.move) ────────────────────
+  // fee_bps is passed to marketplace::initialize; fee_collector receives the
+  // protocol fee cut on every fill. Both fall back to sane defaults so the hub
+  // can boot without extra env wiring (same "share the admin wallet" logic).
+  MARKETPLACE_FEE_BPS: Number(process.env.MARKETPLACE_FEE_BPS ?? 50), // 50 = 0.50%
+  FEE_COLLECTOR:
+    process.env.FEE_COLLECTOR_ADDRESS || process.env.CONTRACT_ADDRESS!,
 };
 
 // ── Module Functions — state.move (updated) ───────────────────────────────────
@@ -94,6 +102,7 @@ export const TOKEN_FUNCTIONS = {
   INITIALIZE_PROJECT_TOKEN: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_token::initialize_project_token`,
   SET_LIFECYCLE: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_token::set_lifecycle`,
   UPDATE_NAV: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_token::update_nav`,
+  SET_MAX_STALENESS: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_token::set_max_staleness_seconds`,
   DISTRIBUTE_YIELD: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_token::distribute_yield`,
   ADMIN_FORCE_BURN: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_token::admin_force_burn`,
   CLAIM_YIELD: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::project_token::claim_yield`,
@@ -106,6 +115,15 @@ export const MARKETPLACE_FUNCTIONS = {
   PLACE_ORDER: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::marketplace::place_order`,
   CANCEL_ORDER: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::marketplace::cancel_order`,
   FILL_ORDER: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::marketplace::fill_order`,
+};
+
+// ── Module Events — marketplace.move (for the off-chain order-book index) ─────
+// A Table's keys can't be enumerated from chain state, so "what orders exist"
+// is reconstructed off-chain from these events (see orderbook-tracker.ts).
+export const MARKETPLACE_EVENTS = {
+  ORDER_PLACED: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::marketplace::OrderPlaced`,
+  ORDER_CANCELLED: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::marketplace::OrderCancelled`,
+  TRADE_SETTLED: `${CONTRACT_CONFIG.CONTRACT_ADDRESS}::marketplace::TradeSettled`,
 };
 
 
