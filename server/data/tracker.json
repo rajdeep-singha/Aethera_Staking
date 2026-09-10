@@ -31,6 +31,28 @@
       "location_id": 0,
       "project_id": 0,
       "registered_at": 1776150208966
+    },
+    "0xae835204df870891911f1c6e53400cbd02cc9bdb2ac625be48302772b06f35f6": {
+      "wallet_address": "0xae835204df870891911f1c6e53400cbd02cc9bdb2ac625be48302772b06f35f6",
+      "name": "Unknown (on-chain)",
+      "business_reg": "Unknown",
+      "documents_hash": "ipfs://qm",
+      "kyc_status": 1,
+      "location_id": 1,
+      "project_id": 4,
+      "registered_at": 1786898300627,
+      "kyc_submitted_at": 1786898300627
+    },
+    "0x48a2ccf87e3faf731acc5121e374a1f7f0ea148dfb7447daf238696e0485782a": {
+      "wallet_address": "0x48a2ccf87e3faf731acc5121e374a1f7f0ea148dfb7447daf238696e0485782a",
+      "name": "Unknown (on-chain)",
+      "business_reg": "Unknown",
+      "documents_hash": "ipfs://fbvbf",
+      "kyc_status": 1,
+      "location_id": 2,
+      "project_id": 0,
+      "registered_at": 1787467881032,
+      "kyc_submitted_at": 1787467881032
     }
   },
   "projects": {
@@ -72,7 +94,20 @@
       "expected_yield_bps": 800,
       "status": 1,
       "submitted_at": 1776149545634
+    },
+    "4": {
+      "project_id": 4,
+      "name": "Pheonix",
+      "installer": "0xae835204df870891911f1c6e53400cbd02cc9bdb2ac625be48302772b06f35f6",
+      "location_id": 1,
+      "capacity_kw": 500,
+      "cost_apt": "100000000000",
+      "description": "a test",
+      "documents_hash": "ipfs://qm",
+      "expected_yield_bps": 800,
+      "status": 0,
+      "submitted_at": 1786898450717
     }
   },
-  "nextProjectId": 4
+  "nextProjectId": 5
 }
