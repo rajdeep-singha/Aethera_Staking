@@ -2,7 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Locations.css";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+// VITE_API_URL may hold a comma-separated list (e.g. "local,prod"); use the first.
+const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:3000/api")
+  .split(",")[0]
+  .trim();
 
 interface LocationData {
   id: number;

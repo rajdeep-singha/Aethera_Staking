@@ -5,8 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { getInstaller, getBalance, type InstallerInfo } from "../../services/api";
 import "./InstallerPortal.css";
 
-const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS ||
-  "0x3894481b4dab10b691e954de7836b39fab6ea587861a613792aabd2f21008747";
+const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS;
 
 const REGISTRY_AUTHORITY = import.meta.env.VITE_REGISTRY_AUTHORITY || CONTRACT_ADDRESS;
 const PROJECT_AUTHORITY  = import.meta.env.VITE_PROJECT_AUTHORITY  || CONTRACT_ADDRESS;
