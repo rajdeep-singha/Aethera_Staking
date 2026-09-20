@@ -1,7 +1,7 @@
 .locations-page {
   min-height: 100vh;
-  background: #0b1120;
-  color: white;
+  background: #f5f1ea;
+  color: #1e1b16;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -11,8 +11,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 32px;
-  background: rgba(255,255,255,0.03);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: #ffffff;
+  border-bottom: 1px solid #ffffff;
   flex-wrap: wrap;
   gap: 12px;
 }
@@ -20,14 +20,14 @@
 .oracle-brand { display: flex; align-items: center; gap: 12px; }
 .oracle-logo  { font-size: 32px; }
 .oracle-title { display: block; font-size: 20px; font-weight: 700; }
-.oracle-sub   { display: block; font-size: 13px; color: #64748b; }
+.oracle-sub   { display: block; font-size: 13px; color: #8a8073; }
 
 .header-actions { display: flex; align-items: center; gap: 10px; }
 
 .network-chip {
-  background: rgba(99,102,241,0.15);
-  border: 1px solid rgba(99,102,241,0.3);
-  color: #a5b4fc;
+  background: rgba(108,92,184,0.15);
+  border: 1px solid rgba(108,92,184,0.3);
+  color: #8e7dd0;
   padding: 6px 14px;
   border-radius: 8px;
   font-size: 13px;
@@ -36,7 +36,7 @@
 
 .refresh-btn {
   background: #f59e0b;
-  color: #0b1120;
+  color: #f5f1ea;
   border: none;
   padding: 8px 18px;
   border-radius: 8px;
@@ -47,9 +47,9 @@
 .refresh-btn:disabled { opacity: 0.6; }
 
 .back-btn {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #94a3b8;
+  background: #ffffff;
+  border: 1px solid rgba(30,27,22,0.10);
+  color: #6b6357;
   padding: 7px 14px;
   border-radius: 8px;
   font-size: 13px;
@@ -69,8 +69,8 @@
 @media (max-width: 900px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
 
 .stat-card {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.07);
+  background: #ffffff;
+  border: 1px solid #ffffff;
   border-radius: 14px;
   padding: 20px 24px;
   display: flex;
@@ -78,9 +78,9 @@
   gap: 4px;
 }
 .stat-icon  { font-size: 18px; color: #f59e0b; margin-bottom: 4px; }
-.stat-label { font-size: 13px; color: #64748b; }
-.stat-value { font-size: 36px; font-weight: 700; color: white; line-height: 1.1; }
-.stat-sub   { font-size: 12px; color: #475569; }
+.stat-label { font-size: 13px; color: #8a8073; }
+.stat-value { font-size: 36px; font-weight: 700; color: #1e1b16; line-height: 1.1; }
+.stat-sub   { font-size: 12px; color: #6b6357; }
 
 /* Location grid */
 .location-grid {
@@ -93,8 +93,8 @@
 @media (max-width: 640px)  { .location-grid { grid-template-columns: 1fr; } }
 
 .location-card {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.07);
+  background: #ffffff;
+  border: 1px solid #ffffff;
   border-radius: 16px;
   padding: 24px;
   display: flex;
@@ -102,7 +102,7 @@
   gap: 16px;
   transition: border-color 0.2s;
 }
-.location-card:hover { border-color: rgba(255,255,255,0.15); }
+.location-card:hover { border-color: rgba(30,27,22,0.10); }
 
 .loc-header {
   display: flex;
@@ -110,25 +110,25 @@
   align-items: flex-start;
 }
 .loc-header h3    { font-size: 18px; font-weight: 700; margin: 0 0 4px; }
-.loc-coords       { font-size: 12px; color: #64748b; font-family: monospace; }
+.loc-coords       { font-size: 12px; color: #8a8073; font-family: monospace; }
 .sun-icon         { font-size: 28px; background: rgba(245,158,11,0.15); padding: 8px; border-radius: 10px; }
 
 .loc-metrics      { display: flex; flex-direction: column; gap: 10px; }
 .metric-row       { display: flex; justify-content: space-between; align-items: center; }
-.metric-label     { font-size: 13px; color: #64748b; }
+.metric-label     { font-size: 13px; color: #8a8073; }
 .metric-value     { font-size: 22px; font-weight: 700; color: #f59e0b; }
-.metric-value small { font-size: 11px; color: #64748b; font-weight: 400; margin-left: 2px; }
+.metric-value small { font-size: 11px; color: #8a8073; font-weight: 400; margin-left: 2px; }
 
 .loc-footer { display: flex; flex-direction: column; gap: 6px; }
 .potential-row { display: flex; justify-content: space-between; }
-.potential-label  { font-size: 13px; color: #64748b; }
+.potential-label  { font-size: 13px; color: #8a8073; }
 .potential-value  { font-size: 13px; font-weight: 700; }
-.updated-at       { font-size: 11px; color: #475569; }
+.updated-at       { font-size: 11px; color: #6b6357; }
 
 .view-projects-btn {
   width: 100%;
-  background: linear-gradient(135deg, #16a34a, #15803d);
-  color: white;
+  background: linear-gradient(135deg, #2fb89c, #278f79);
+  color: #1e1b16;
   border: none;
   border-radius: 10px;
   padding: 12px;
@@ -144,14 +144,14 @@
 .loading-state {
   text-align: center;
   padding: 80px;
-  color: #64748b;
+  color: #8a8073;
   font-size: 16px;
 }
 
 /* Footer */
 .oracle-footer {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
+  background: #ffffff;
+  border: 1px solid #ffffff;
   border-radius: 16px;
   padding: 24px 32px;
   display: grid;
@@ -160,8 +160,15 @@
 }
 @media (max-width: 640px) { .oracle-footer { grid-template-columns: 1fr; } }
 
-.footer-label { display: block; font-size: 12px; color: #64748b; margin-bottom: 6px; }
+.footer-label { display: block; font-size: 12px; color: #8a8073; margin-bottom: 6px; }
 .footer-value { display: block; font-size: 14px; font-weight: 500; margin-bottom: 4px; }
-.footer-value.mono { font-family: monospace; font-size: 12px; color: #94a3b8; word-break: break-all; }
-.footer-sub   { display: block; font-size: 12px; color: #475569; }
-.explorer-link { font-size: 13px; color: #4ade80; text-decoration: none; }
+.footer-value.mono { font-family: monospace; font-size: 12px; color: #6b6357; word-break: break-all; }
+.footer-sub   { display: block; font-size: 12px; color: #6b6357; }
+.explorer-link { font-size: 13px; color: #2fb89c; text-decoration: none; }
+/* === Aethera brand: primary action buttons (teal -> purple) === */
+.view-projects-btn {
+  background: var(--brand-grad);
+  color: #fff;
+  border: none;
+}
+.view-projects-btn:hover { background: var(--brand-grad-hover); opacity: 1; }

@@ -32,6 +32,17 @@
   --gradient-primary: linear-gradient(135deg, #64ffda, #00d4aa);
   --gradient-secondary: linear-gradient(135deg, #8b5cf6, #6366f1);
   --gradient-accent: linear-gradient(135deg, #ffd700, #ffb700);
+
+  /* Aethera brand (light "stone" theme for product pages) */
+  --stone: #f5f1ea;
+  --surface: #ffffff;
+  --ink: #1e1b16;
+  --ink-muted: #6b6357;
+  --ink-subtle: #8a8073;
+  --brand-teal: #35c6a6;
+  --brand-purple: #7b68c4;
+  --brand-grad: linear-gradient(135deg, #35c6a6 0%, #7b68c4 100%);
+  --brand-grad-hover: linear-gradient(135deg, #2fb89c 0%, #6c5cb8 100%);
   
   /* Shadows */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);

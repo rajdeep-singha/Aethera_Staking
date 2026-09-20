@@ -60,9 +60,9 @@ async function fetchOracleLocations(): Promise<LocationData[]> {
 }
 
 const potentialColor = (p: string) => {
-  if (p === "Excellent") return "#f59e0b";
-  if (p === "Good")      return "#4ade80";
-  return "#94a3b8";
+  if (p === "Excellent") return "#d97706";
+  if (p === "Good")      return "#16a34a";
+  return "#8a8073";
 };
 
 export default function Locations() {
@@ -201,7 +201,7 @@ export default function Locations() {
           </div>
           <div>
             <span className="footer-label">Network</span>
-            <span className="footer-value" style={{ color: "#4ade80" }}>testnet</span>
+            <span className="footer-value" style={{ color: "#16a34a" }}>testnet</span>
             <span className="footer-sub">Oracle data managed by Aethera API</span>
           </div>
         </div>

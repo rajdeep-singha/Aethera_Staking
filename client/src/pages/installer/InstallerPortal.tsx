@@ -538,7 +538,7 @@ export default function InstallerPortal() {
   };
 
   const kycStatusColor = (s: number) =>
-    s === 2 ? "#16a34a" : s === 3 ? "#dc2626" : s === 1 ? "#d97706" : "#64748b";
+    s === 2 ? "#16a34a" : s === 3 ? "#dc2626" : s === 1 ? "#d97706" : "#8a8073";
 
   return (
     <div className="installer-portal">
@@ -622,7 +622,7 @@ export default function InstallerPortal() {
                 <button 
                   className="primary-btn" 
                   onClick={() => setStep(2)} 
-                  style={{ flex: 1, background: '#10b981' }}
+                  style={{ flex: 1 }}
                   title="Already registered? Click to proceed to KYC"
                 >
                   Proceed to KYC →
@@ -664,7 +664,7 @@ export default function InstallerPortal() {
                       setStep(4); // KYC submitted → Awaiting Approval
                     }
                   }} 
-                  style={{ flex: 1, background: '#10b981' }}
+                  style={{ flex: 1 }}
                   title={installerInfo.kyc_status === 2 ? "KYC Approved - Go to Projects" : "KYC Submitted - Awaiting Approval"}
                 >
                   {installerInfo.kyc_status === 2 ? "Go to Projects →" : "Awaiting Approval →"}

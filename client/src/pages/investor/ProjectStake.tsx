@@ -440,7 +440,7 @@ export default function ProjectStake() {
                   <span>Status</span>
                   <strong
                     style={{
-                      color: playerStake.is_locked ? "#f59e0b" : "#4ade80",
+                      color: playerStake.is_locked ? "#d97706" : "#16a34a",
                     }}
                   >
                     {playerStake.is_locked
