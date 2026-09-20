@@ -1,13 +1,18 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from "react-router-dom";
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import "./Landing.css";
 import DotGrid from './DotGrid';
 import solarOracleImg from '../assets/solar-oracle.png';
 import stakingImg from '../assets/staking.png';
 
+gsap.registerPlugin(ScrollTrigger);
+
 export default function Landing() {
   const navigate = useNavigate();
+  const rootRef = useRef<HTMLDivElement>(null);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
@@ -23,6 +28,65 @@ export default function Landing() {
   }, [darkMode]);
 
   const toggleDarkMode = () => setDarkMode(!darkMode);
+
+  // Scroll-driven "slanted -> straight" reveal for cards & product images
+  useEffect(() => {
+    // Respect users who prefer reduced motion
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const ctx = gsap.context(() => {
+      // Role cards: tilt back, then straighten as they scroll into view
+      const cards = gsap.utils.toArray<HTMLElement>('.landing-card');
+      cards.forEach((card) => {
+        gsap.fromTo(
+          card,
+          { rotateX: -45, y: 60, opacity: 0, transformOrigin: '50% 100%' },
+          {
+            rotateX: 0,
+            y: 0,
+            opacity: 1,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: card,
+              start: 'top 90%',   // begin as the card enters the viewport
+              end: 'top 45%',     // fully straight once it reaches upper-middle
+              scrub: true,
+            },
+          }
+        );
+      });
+
+      // Product dashboard images: subtle 3D slant that straightens on scroll
+      const images = gsap.utils.toArray<HTMLElement>('.product-image-wrapper');
+      images.forEach((img, i) => {
+        gsap.fromTo(
+          img,
+          {
+            rotateX: 22,
+            rotateY: i % 2 === 0 ? -16 : 16, // alternate slant direction
+            y: 70,
+            opacity: 0,
+            transformOrigin: '50% 50%',
+          },
+          {
+            rotateX: 0,
+            rotateY: 0,
+            y: 0,
+            opacity: 1,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: img,
+              start: 'top 90%',
+              end: 'top 40%',
+              scrub: true,
+            },
+          }
+        );
+      });
+    }, rootRef);
+
+    return () => ctx.revert();
+  }, []);
 
   return (
     <>
@@ -40,7 +104,7 @@ export default function Landing() {
         returnDuration={1.5}
       />
 
-      <div className={`landing ${darkMode ? 'dark' : ''}`}>
+      <div ref={rootRef} className={`landing ${darkMode ? 'dark' : ''}`}>
         {/* Navbar */}
         <nav className="landing-nav">
           <div className="nav-logo">

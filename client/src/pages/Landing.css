@@ -249,6 +249,12 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
+  /* 3D depth for the scroll "slant -> straighten" reveal */
+  perspective: 1600px;
+}
+
+.landing-card {
+  transform-style: preserve-3d;
 }
 
 @media (max-width: 900px) {
@@ -386,6 +392,12 @@
   gap: 64px;
   align-items: center;
   margin-bottom: 100px;
+  /* 3D depth for the scroll "slant -> straighten" reveal */
+  perspective: 1600px;
+}
+
+.product-image-wrapper {
+  transform-style: preserve-3d;
 }
 
 .product-showcase.reverse {
