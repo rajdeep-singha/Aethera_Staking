@@ -1,6 +1,14 @@
 import { AptosWalletAdapterProvider } from "@aptos-labs/wallet-adapter-react";
 import { Network } from "@aptos-labs/ts-sdk";
 import type { PropsWithChildren } from "react";
+import { WalletModalProvider } from "./components/WalletModal";
+
+// Optional: register your dApp at the Aptos Connect dev portal for branding +
+// higher keyless rate limits. Keyless (Google/Apple) works without it in dev.
+// NOTE: must be `undefined` when unset — passing an empty string "" makes the
+// web.petra.app/prompt/ keyless flow render a blank screen.
+const APTOS_CONNECT_DAPP_ID =
+  import.meta.env.VITE_APTOS_CONNECT_DAPP_ID || undefined;
 
 export function WalletProvider({ children }: PropsWithChildren) {
   return (
@@ -8,6 +16,7 @@ export function WalletProvider({ children }: PropsWithChildren) {
       autoConnect={true}
       dappConfig={{
         network: Network.TESTNET,
+        aptosConnectDappId: APTOS_CONNECT_DAPP_ID,
       }}
       onError={(error) => {
         // Handle specific wallet errors
@@ -23,7 +32,7 @@ export function WalletProvider({ children }: PropsWithChildren) {
         }
       }}
     >
-      {children}
+      <WalletModalProvider>{children}</WalletModalProvider>
     </AptosWalletAdapterProvider>
   );
 }

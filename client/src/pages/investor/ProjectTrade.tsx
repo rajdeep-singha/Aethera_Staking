@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import type { InputTransactionData } from "@aptos-labs/wallet-adapter-react";
+import { useWalletModal } from "../../components/WalletModal";
 import {
   getProject,
   getTokenBalance,
@@ -29,14 +30,13 @@ export default function ProjectTrade() {
   const projId = Number(projectId);
 
   const {
-    connect,
     disconnect,
     account,
     connected,
-    wallets,
     signAndSubmitTransaction,
     network,
   } = useWallet();
+  const { open: openWalletModal } = useWalletModal();
 
   const [project, setProject] = useState<ProjectInfo | null>(null);
   const [tokenBalance, setTokenBalance] = useState("0");
@@ -57,7 +57,6 @@ export default function ProjectTrade() {
   const [qty, setQty] = useState("");
 
   const walletAddress = account?.address?.toString() || null;
-  const petra = wallets?.find((w) => w.name.toLowerCase().includes("petra"));
   const isActive = lifecycle === Lifecycle.ACTIVE;
 
   // Load project + market data
@@ -111,14 +110,7 @@ export default function ProjectTrade() {
     return () => clearInterval(t);
   }, [projId]);
 
-  const handleConnect = async () => {
-    const w = petra || wallets?.[0];
-    if (!w) {
-      window.open("https://petra.app/", "_blank");
-      return;
-    }
-    await connect(w.name);
-  };
+  const handleConnect = () => openWalletModal();
 
   const submitTx = useCallback(
     async (fn: string, args: any[]) => {

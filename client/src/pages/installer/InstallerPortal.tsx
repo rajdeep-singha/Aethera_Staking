@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import type { InputTransactionData } from "@aptos-labs/wallet-adapter-react";
 import { useNavigate } from "react-router-dom";
+import { useWalletModal } from "../../components/WalletModal";
 import { getInstaller, getBalance, type InstallerInfo } from "../../services/api";
 import "./InstallerPortal.css";
 
@@ -20,7 +21,8 @@ const ORACLE_LOCATIONS = [
 const STEPS = ["Connect Wallet", "Register", "KYC", "Submit Project", "Status"];
 
 export default function InstallerPortal() {
-  const { connect, disconnect, account, connected, wallets, signAndSubmitTransaction } = useWallet();
+  const { disconnect, account, connected, signAndSubmitTransaction } = useWallet();
+  const { open: openWalletModal } = useWalletModal();
   const navigate = useNavigate();
 
   const [step, setStep] = useState(0);
@@ -47,7 +49,6 @@ export default function InstallerPortal() {
   const [yieldBps, setYieldBps]             = useState("800");
 
   const walletAddress = account?.address?.toString() || null;
-  const petra = wallets?.find((w) => w.name.toLowerCase().includes("petra"));
 
   // Auto-advance step when wallet connects - ALWAYS fetch fresh data
   useEffect(() => {
@@ -119,12 +120,7 @@ export default function InstallerPortal() {
     }
   };
 
-  const handleConnect = async () => {
-    const w = petra || wallets?.[0];
-    if (!w) { window.open("https://petra.app/", "_blank"); return; }
-    setLoading(true);
-    try { await connect(w.name); } finally { setLoading(false); }
-  };
+  const handleConnect = () => openWalletModal();
 
   // Step 1 — Register
   const handleRegister = async () => {
@@ -596,7 +592,7 @@ export default function InstallerPortal() {
             <h2>Connect Your Wallet</h2>
             <p>Connect your Petra wallet to start the installer onboarding process.</p>
             <button className="primary-btn" onClick={handleConnect} disabled={loading}>
-              {loading ? "Connecting..." : "🔗 Connect Petra Wallet"}
+              {loading ? "Connecting..." : "🔗 Connect Wallet"}
             </button>
           </div>
         )}
