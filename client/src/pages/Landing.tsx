@@ -113,6 +113,13 @@ export default function Landing() {
           <div className="nav-links">
             <a href="#features" className="nav-link">Features</a>
             <a href="#products" className="nav-link">Products</a>
+            <a
+              className="nav-link"
+              onClick={() => navigate("/docs")}
+              style={{ cursor: "pointer" }}
+            >
+              Docs
+            </a>
             <a href="https://github.com/Aethera-Lab" target="_blank" rel="noopener noreferrer" className="nav-link">GitHub</a>
             <a href="https://x.com/aetheraFi" target="_blank" rel="noopener noreferrer" className="nav-link">Twitter</a>
           </div>

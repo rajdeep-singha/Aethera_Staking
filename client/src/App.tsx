@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { WalletProvider } from "./WalletProvider";
 
 import Landing from "./pages/Landing";
+import Docs from "./pages/Docs";
 import InstallerPortal from "./pages/installer/InstallerPortal";
 import Locations from "./pages/investor/Locations";
 import Projects from "./pages/investor/Projects";
@@ -16,6 +17,9 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
+
+          {/* Docs */}
+          <Route path="/docs" element={<Docs />} />
 
           {/* Installer */}
           <Route path="/installer" element={<InstallerPortal />} />
