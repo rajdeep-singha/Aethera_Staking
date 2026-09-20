@@ -1,11 +1,15 @@
 /**
  * Persistent registration tracker
- * Stores installer registrations and KYC submissions in a JSON file
- * Data persists across server restarts
+ *
+ * Stores installer registrations, KYC submissions, and project submissions.
+ * The in-memory Maps are the live source of truth for the (synchronous) public API;
+ * Neon (Postgres) is the durable store, with a local JSON file kept as a backup mirror.
+ * Data persists across server restarts.
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { sql } from '../config/db.config';
 
 interface TrackedInstaller {
   wallet_address: string;
@@ -46,8 +50,214 @@ class RegistrationTracker {
   private projects: Map<number, TrackedProject> = new Map();
   private nextProjectId: number = 1;
 
+  // Resolves once init() has loaded/seeded Neon and the schema exists.
+  // flushToDb() awaits this so mutations that fire before startup completes are queued.
+  private ready: Promise<void>;
+  private markReady!: () => void;
+  // Serializes DB flushes so concurrent mutations don't race.
+  private flushChain: Promise<void> = Promise.resolve();
+
   constructor() {
+    this.ready = new Promise((resolve) => {
+      this.markReady = resolve;
+    });
+    // Warm the in-memory Maps immediately from the local JSON backup, so reads work
+    // even before init() finishes reconciling from Neon (Neon wins once loaded).
     this.loadFromFile();
+  }
+
+  // ─── Neon persistence ──────────────────────────────────────────────────────
+
+  /** Create the tables if they don't exist. Idempotent. */
+  private async ensureSchema(): Promise<void> {
+    await sql`
+      CREATE TABLE IF NOT EXISTS installers (
+        wallet_address   TEXT PRIMARY KEY,
+        name             TEXT NOT NULL,
+        business_reg     TEXT NOT NULL,
+        documents_hash   TEXT NOT NULL DEFAULT '',
+        kyc_status       INTEGER NOT NULL DEFAULT 0,
+        location_id      INTEGER NOT NULL DEFAULT 0,
+        project_id       INTEGER NOT NULL DEFAULT 0,
+        registered_at    BIGINT NOT NULL,
+        kyc_submitted_at BIGINT
+      )
+    `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS projects (
+        project_id         INTEGER PRIMARY KEY,
+        name               TEXT NOT NULL,
+        installer          TEXT NOT NULL,
+        location_id        INTEGER NOT NULL,
+        capacity_kw        INTEGER NOT NULL,
+        cost_apt           TEXT NOT NULL,
+        description        TEXT NOT NULL,
+        documents_hash     TEXT NOT NULL,
+        expected_yield_bps INTEGER NOT NULL,
+        status             INTEGER NOT NULL DEFAULT 0,
+        submitted_at       BIGINT NOT NULL
+      )
+    `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS tracker_meta (
+        key   TEXT PRIMARY KEY,
+        value BIGINT NOT NULL
+      )
+    `;
+  }
+
+  /**
+   * One-time startup: ensure schema, seed from tracker.json if the DB is empty,
+   * then load all rows from Neon into the in-memory Maps (Neon is authoritative).
+   * Must be awaited during server startup.
+   */
+  async init(): Promise<void> {
+    try {
+      await this.ensureSchema();
+
+      const [{ count: installerCount }] = await sql`SELECT COUNT(*)::int AS count FROM installers`;
+      const [{ count: projectCount }] = await sql`SELECT COUNT(*)::int AS count FROM projects`;
+
+      // Seed from the JSON backup on first run (empty DB + a file already on disk).
+      if (installerCount === 0 && projectCount === 0 && this.installers.size > 0) {
+        console.log(`[RegistrationTracker] Empty Neon DB — seeding from tracker.json...`);
+        await this.flushChainImmediate();
+        console.log(
+          `[RegistrationTracker] Seeded ${this.installers.size} installers, ${this.projects.size} projects into Neon`,
+        );
+      }
+
+      await this.loadFromDb();
+      this.markReady();
+    } catch (error) {
+      console.error('[RegistrationTracker] init() failed:', error);
+      // Still resolve so the (JSON-backed) in-memory tracker keeps serving reads.
+      this.markReady();
+    }
+  }
+
+  /** Load all rows from Neon into the in-memory Maps, replacing current contents. */
+  private async loadFromDb(): Promise<void> {
+    const installerRows = (await sql`SELECT * FROM installers`) as any[];
+    const projectRows = (await sql`SELECT * FROM projects`) as any[];
+
+    this.installers.clear();
+    for (const r of installerRows) {
+      this.installers.set(r.wallet_address, {
+        wallet_address: r.wallet_address,
+        name: r.name,
+        business_reg: r.business_reg,
+        documents_hash: r.documents_hash,
+        kyc_status: Number(r.kyc_status),
+        location_id: Number(r.location_id),
+        project_id: Number(r.project_id),
+        registered_at: Number(r.registered_at),
+        kyc_submitted_at: r.kyc_submitted_at != null ? Number(r.kyc_submitted_at) : undefined,
+      });
+    }
+
+    this.projects.clear();
+    for (const r of projectRows) {
+      this.projects.set(Number(r.project_id), {
+        project_id: Number(r.project_id),
+        name: r.name,
+        installer: r.installer,
+        location_id: Number(r.location_id),
+        capacity_kw: Number(r.capacity_kw),
+        cost_apt: r.cost_apt,
+        description: r.description,
+        documents_hash: r.documents_hash,
+        expected_yield_bps: Number(r.expected_yield_bps),
+        status: Number(r.status),
+        submitted_at: Number(r.submitted_at),
+      });
+    }
+
+    const metaRows = (await sql`SELECT value FROM tracker_meta WHERE key = 'nextProjectId'`) as any[];
+    if (metaRows.length > 0) {
+      this.nextProjectId = Number(metaRows[0].value);
+    } else {
+      // Fallback: derive from the max project id we loaded.
+      let maxId = 0;
+      for (const id of this.projects.keys()) maxId = Math.max(maxId, id);
+      this.nextProjectId = maxId + 1;
+    }
+
+    console.log(
+      `[RegistrationTracker] Loaded ${this.installers.size} installers, ${this.projects.size} projects from Neon (nextProjectId=${this.nextProjectId})`,
+    );
+  }
+
+  /** Upsert every current Map entry + meta into Neon. Waits for init() first. */
+  private async flushToDb(): Promise<void> {
+    await this.ready;
+    await this.flushChainImmediate();
+  }
+
+  /** Upsert current state into Neon without waiting on `ready` (used during seed + flush). */
+  private async flushChainImmediate(): Promise<void> {
+    for (const i of this.installers.values()) {
+      await sql`
+        INSERT INTO installers (
+          wallet_address, name, business_reg, documents_hash,
+          kyc_status, location_id, project_id, registered_at, kyc_submitted_at
+        ) VALUES (
+          ${i.wallet_address}, ${i.name}, ${i.business_reg}, ${i.documents_hash},
+          ${i.kyc_status}, ${i.location_id}, ${i.project_id}, ${i.registered_at},
+          ${i.kyc_submitted_at ?? null}
+        )
+        ON CONFLICT (wallet_address) DO UPDATE SET
+          name = EXCLUDED.name,
+          business_reg = EXCLUDED.business_reg,
+          documents_hash = EXCLUDED.documents_hash,
+          kyc_status = EXCLUDED.kyc_status,
+          location_id = EXCLUDED.location_id,
+          project_id = EXCLUDED.project_id,
+          registered_at = EXCLUDED.registered_at,
+          kyc_submitted_at = EXCLUDED.kyc_submitted_at
+      `;
+    }
+
+    for (const p of this.projects.values()) {
+      await sql`
+        INSERT INTO projects (
+          project_id, name, installer, location_id, capacity_kw, cost_apt,
+          description, documents_hash, expected_yield_bps, status, submitted_at
+        ) VALUES (
+          ${p.project_id}, ${p.name}, ${p.installer}, ${p.location_id}, ${p.capacity_kw}, ${p.cost_apt},
+          ${p.description}, ${p.documents_hash}, ${p.expected_yield_bps}, ${p.status}, ${p.submitted_at}
+        )
+        ON CONFLICT (project_id) DO UPDATE SET
+          name = EXCLUDED.name,
+          installer = EXCLUDED.installer,
+          location_id = EXCLUDED.location_id,
+          capacity_kw = EXCLUDED.capacity_kw,
+          cost_apt = EXCLUDED.cost_apt,
+          description = EXCLUDED.description,
+          documents_hash = EXCLUDED.documents_hash,
+          expected_yield_bps = EXCLUDED.expected_yield_bps,
+          status = EXCLUDED.status,
+          submitted_at = EXCLUDED.submitted_at
+      `;
+    }
+
+    await sql`
+      INSERT INTO tracker_meta (key, value) VALUES ('nextProjectId', ${this.nextProjectId})
+      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+    `;
+  }
+
+  /**
+   * Persist current state: write the JSON backup mirror (synchronous, as before) and
+   * enqueue an async Neon flush. Called after every mutation, keeping the public API sync.
+   */
+  private persist(): void {
+    this.saveToFile();
+    this.flushChain = this.flushChain
+      .then(() => this.flushToDb())
+      .catch((error) => {
+        console.error('[RegistrationTracker] Neon flush failed:', error);
+      });
   }
 
   private loadFromFile(): void {
@@ -130,7 +340,7 @@ class RegistrationTracker {
     };
 
     this.installers.set(normalized, installer);
-    this.saveToFile();
+    this.persist();
     console.log(`[RegistrationTracker] ✅ Registered: ${normalized}`);
     return true;
   }
@@ -159,7 +369,7 @@ class RegistrationTracker {
     };
 
     this.installers.set(normalized, installer);
-    this.saveToFile();
+    this.persist();
     console.log(`[RegistrationTracker] ✅ Marked as registered (from on-chain): ${normalized}`);
   }
 
@@ -202,7 +412,7 @@ class RegistrationTracker {
     installer.kyc_status = 1; // SUBMITTED
     installer.kyc_submitted_at = Date.now();
     
-    this.saveToFile();
+    this.persist();
     console.log(`[RegistrationTracker] ✅ KYC submitted: ${normalized}`);
     return true;
   }
@@ -217,7 +427,7 @@ class RegistrationTracker {
     if (!installer) return false;
 
     installer.kyc_status = 2; // APPROVED
-    this.saveToFile();
+    this.persist();
     console.log(`[RegistrationTracker] ✅ KYC approved: ${normalized}`);
     return true;
   }
@@ -232,7 +442,7 @@ class RegistrationTracker {
     if (!installer) return false;
 
     installer.kyc_status = 3; // REJECTED
-    this.saveToFile();
+    this.persist();
     console.log(`[RegistrationTracker] ✅ KYC rejected: ${normalized}`);
     return true;
   }
@@ -287,7 +497,7 @@ class RegistrationTracker {
     this.projects.set(projectId, project);
     installer.project_id = projectId;
     
-    this.saveToFile();
+    this.persist();
     console.log(`[RegistrationTracker] ✅ Project submitted: ID ${projectId} by ${normalized}`);
     return projectId;
   }
@@ -330,7 +540,7 @@ class RegistrationTracker {
     if (!project) return false;
 
     project.status = 1; // APPROVED
-    this.saveToFile();
+    this.persist();
     console.log(`[RegistrationTracker] ✅ Project approved: ID ${projectId}`);
     return true;
   }
@@ -343,7 +553,7 @@ class RegistrationTracker {
     if (!project) return false;
 
     project.status = 2; // REJECTED
-    this.saveToFile();
+    this.persist();
     console.log(`[RegistrationTracker] ✅ Project rejected: ID ${projectId}`);
     return true;
   }

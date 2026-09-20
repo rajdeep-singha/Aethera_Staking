@@ -448,6 +448,13 @@ app.listen(PORT, async () => {
   ╚═══════════════════════════════════════╝
   `);
 
+  // Load the registration tracker's durable store (Neon) before serving requests.
+  console.log("\\n[Startup] Initializing registration tracker (Neon)...");
+  const { registrationTracker } = await import(
+    "./services/registration-tracker"
+  );
+  await registrationTracker.init();
+
   // Initialize registries on startup
   console.log("\\n[Startup] Initializing smart contract registries...");
   const { installerService } = await import("./services/installer.services");

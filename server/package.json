@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@aptos-labs/ts-sdk": "^1.28.0",
+    "@neondatabase/serverless": "^0.10.4",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.18.2",
