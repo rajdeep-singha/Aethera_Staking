@@ -8,14 +8,11 @@ import {
 } from "react";
 import {
   useWallet,
+  groupAndSortWallets,
   type AdapterWallet,
   type AdapterNotDetectedWallet,
 } from "@aptos-labs/wallet-adapter-react";
 import "./WalletModal.css";
-
-// Aptos Connect keyless wallets are auto-registered by the adapter (see the
-// wallet-adapter-core getSDKWallets). They surface in `wallets` under these names.
-const SOCIAL_WALLET_NAMES = ["Continue with Google", "Continue with Apple"];
 
 interface WalletModalContextValue {
   open: () => void;
@@ -55,12 +52,10 @@ function WalletModal({ onClose }: { onClose: () => void }) {
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Close automatically once a connection succeeds.
   useEffect(() => {
     if (connected) onClose();
   }, [connected, onClose]);
 
-  // Close on Escape.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -69,10 +64,11 @@ function WalletModal({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const detected = wallets ?? [];
-  const social = detected.filter((w) => SOCIAL_WALLET_NAMES.includes(w.name));
-  const installed = detected.filter((w) => !SOCIAL_WALLET_NAMES.includes(w.name));
-  const installable = notDetectedWallets ?? [];
+  const { petraWebWallets, availableWallets, installableWallets } =
+    groupAndSortWallets([
+      ...(wallets ?? []),
+      ...(notDetectedWallets ?? []),
+    ]);
 
   const handleConnect = async (wallet: AdapterWallet) => {
     setError(null);
@@ -103,11 +99,10 @@ function WalletModal({ onClose }: { onClose: () => void }) {
 
         {error && <div className="wm-error">{error}</div>}
 
-        {/* Social / keyless (Google, Apple) */}
-        {social.length > 0 && (
+        {petraWebWallets.length > 0 && (
           <div className="wm-section">
-            <p className="wm-label">Continue with social login (no wallet needed)</p>
-            {social.map((w) => (
+            <p className="wm-label">Continue with Google or Apple (no wallet needed)</p>
+            {petraWebWallets.map((w) => (
               <button
                 key={w.name}
                 className="wm-option wm-social"
@@ -121,11 +116,10 @@ function WalletModal({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
-        {/* Installed browser-extension wallets (e.g. Petra) */}
-        {installed.length > 0 && (
+        {availableWallets.length > 0 && (
           <div className="wm-section">
             <p className="wm-label">Connect a wallet</p>
-            {installed.map((w) => (
+            {availableWallets.map((w) => (
               <button
                 key={w.name}
                 className="wm-option"
@@ -139,11 +133,10 @@ function WalletModal({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
-        {/* Not-installed wallets → link to install */}
-        {installable.length > 0 && (
+        {installableWallets.length > 0 && (
           <div className="wm-section">
             <p className="wm-label">Don't have a wallet?</p>
-            {installable.map((w: AdapterNotDetectedWallet) => (
+            {installableWallets.map((w: AdapterNotDetectedWallet) => (
               <a
                 key={w.name}
                 className="wm-option wm-install"
@@ -159,9 +152,11 @@ function WalletModal({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
-        {social.length === 0 && installed.length === 0 && installable.length === 0 && (
-          <p className="wm-empty">No wallet options available.</p>
-        )}
+        {petraWebWallets.length === 0 &&
+          availableWallets.length === 0 &&
+          installableWallets.length === 0 && (
+            <p className="wm-empty">No wallet options available.</p>
+          )}
       </div>
     </div>
   );

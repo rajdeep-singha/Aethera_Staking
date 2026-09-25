@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { simulateStake, aptToOctas, SimulationResult } from '../services/api';
+import { simulateStake, aptToOctas, type SimulationResult } from '../services/api';
 import './StakeForm.css';
 
 interface StakeFormProps {
